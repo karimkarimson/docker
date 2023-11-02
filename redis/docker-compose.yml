@@ -1,0 +1,56 @@
+version: "3.7"
+services:
+  server:
+    container_name: server
+    build: ./server
+    depends_on:
+      - redis
+      - mongo
+    environment:
+      REDIS_USER: ${REDIS_USER}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      MONGODB_ROOT: ${MONGODB_ROOT}
+      MONGODB_PASSWD: ${MONGODB_PASSWD}
+      MONGO_PORT: ${MONGO_PORT}
+      MONGODB_INITDB: ${MONGODB_INITDB}
+      MONGODB_HOST: ${MONGODB_HOST}
+    ports:
+      - 3000:3000
+    volumes:
+      - ./server/app.js:/usr/app/app.js
+    networks:
+      master:
+        aliases:
+          - server
+  redis:
+    container_name: redis
+    image: redis:alpine
+    volumes:
+      - ./data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./redis/redis.log:/usr/local/etc/redis/redis.log
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    networks:
+      master:
+        aliases:
+          - redis
+  mongo:
+    container_name: mongo
+    image: mongo:latest
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_ROOT}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWD}
+      MONGO_INITDB_NAME: ${MONGODB_INITDB}
+    volumes:
+      - ./mongo/mongod.log:/var/log/mongodb/mongod.log
+      - ./mongo/mongod.conf:/etc/mongod.conf
+      - ./mongo/dbscript.js:/docker-entrypoint-initdb.d/dbscript.js
+      - ./mongo/data:/data/db
+    networks:
+      master:
+        aliases:
+          - mongo
+networks:
+  master:
+    external: true
